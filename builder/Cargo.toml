@@ -22,3 +22,7 @@ syn = { version = "1.0.11", features = ["full", "extra-traits"] }
 [[bin]]
 name = "02-create-builder"
 path = "tests/02-create-builder.rs"
+
+[[bin]]
+name = "03-call-setters"
+path = "tests/03-call-setters.rs"

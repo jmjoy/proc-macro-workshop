@@ -1,11 +1,9 @@
 extern crate proc_macro;
 
 use proc_macro::{TokenStream};
-use quote::{quote, quote_spanned};
-use syn::{parse_macro_input, DeriveInput, Ident, Data, Fields, Type};
-use syn::token::Comma;
+use quote::quote;
+use syn::{parse_macro_input, DeriveInput, Ident, Data, Fields};
 use syn::export::Span;
-use syn::punctuated::Punctuated;
 
 #[proc_macro_derive(Builder)]
 pub fn derive(input: TokenStream) -> TokenStream {
@@ -21,7 +19,13 @@ pub fn derive(input: TokenStream) -> TokenStream {
                     let expanded = quote! {
                          #ident: Option<#ty>,
                     };
-                    (ident, expanded)
+                    let builder_expanded = quote! {
+                        fn #ident(&mut self, #ident: #ty) -> &mut Self {
+                            self.#ident = Some(#ident);
+                            self
+                        }
+                    };
+                    (ident, expanded, builder_expanded)
                 })
             }
             _ => todo!(),
@@ -30,7 +34,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
     };
 
     let field_names = metadata.clone().map(|item| item.0);
-    let fields = metadata.map(|item| item.1);
+    let fields = metadata.clone().map(|item| item.1);
+    let builder_fns = metadata.map(|item| item.2);
 
     let builder_name = Ident::new(&format!("{}Builder", name), Span::call_site());
     let expanded = quote! {
@@ -44,6 +49,10 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
         pub struct #builder_name {
             #(#fields)*
+        }
+
+        impl #builder_name {
+            #(#builder_fns)*
         }
     };
     expanded.into()
