@@ -26,3 +26,7 @@ path = "tests/02-create-builder.rs"
 [[bin]]
 name = "03-call-setters"
 path = "tests/03-call-setters.rs"
+
+[[bin]]
+name = "04-call-build"
+path = "tests/04-call-build.rs"

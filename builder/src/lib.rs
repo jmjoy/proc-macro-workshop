@@ -25,7 +25,16 @@ pub fn derive(input: TokenStream) -> TokenStream {
                             self
                         }
                     };
-                    (ident, expanded, builder_expanded)
+                    let error_message = format!("Field `{}` cant't be none.", ident.as_ref().unwrap().to_string());
+                    let builder_if_expanded = quote! {
+                        if self.#ident.is_none() {
+                            std::result::Result::Err(#error_message)?;
+                        }
+                    };
+                    let builder_construct_expanded = quote! {
+                        #ident: self.#ident.clone().unwrap(),
+                    };
+                    (ident, expanded, builder_expanded, builder_if_expanded, builder_construct_expanded)
                 })
             }
             _ => todo!(),
@@ -35,7 +44,9 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let field_names = metadata.clone().map(|item| item.0);
     let fields = metadata.clone().map(|item| item.1);
-    let builder_fns = metadata.map(|item| item.2);
+    let builder_fns = metadata.clone().map(|item| item.2);
+    let builder_if_stmts = metadata.clone().map(|item| item.3);
+    let builder_constructs = metadata.map(|item| item.4) ;
 
     let builder_name = Ident::new(&format!("{}Builder", name), Span::call_site());
     let expanded = quote! {
@@ -53,6 +64,14 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
         impl #builder_name {
             #(#builder_fns)*
+
+             pub fn build(&mut self) -> std::result::Result<#name, std::boxed::Box<dyn std::error::Error>> {
+                #(#builder_if_stmts)*
+
+                Ok(#name {
+                    #(#builder_constructs)*
+                })
+             }
         }
     };
     expanded.into()
